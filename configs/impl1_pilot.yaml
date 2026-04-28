@@ -1,0 +1,18 @@
+data:
+  input_xml_dir: /home/ubuntu/Documents/tenhou_xml_2023
+  pilot_10_files: outputs/impl1/pilot_10.npz
+  pilot_100_files: outputs/impl1/pilot_100.npz
+  pilot_1000_files: outputs/impl1/pilot_1000.npz
+
+model:
+  d_model: 128
+  n_layers: 4
+  n_heads: 8
+  batch_size: 128
+  epochs: 3
+  learning_rate: 0.0003
+
+checks:
+  require_no_opponent_hand_keys: true
+  require_label_in_valid_mask: true
+  mjx_crosscheck_optional: true

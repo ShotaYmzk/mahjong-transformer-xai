@@ -1,0 +1,9 @@
+numpy
+torch
+h5py
+matplotlib
+
+# Optional:
+# pytest
+# mahjong
+# mjx

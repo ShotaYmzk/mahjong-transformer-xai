@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environments
+.venv/
+venv/
+env/
+
+# Large generated data and model artifacts
+outputs/
+tenhou_discards_tiles_mapped/
+*.npz
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.ckpt
+
+# Local datasets
+tenhou_xml_2023/
+*.xml
+*.mjlog
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
