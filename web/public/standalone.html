@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mahjong AI Decision Viewer</title>
+    <style>
+      :root {
+        --river-gap: 1px;
+        color: #e8fbff;
+        background: #062f33;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-width: 980px;
+        background:
+          radial-gradient(circle at 30% 12%, rgba(0, 180, 190, 0.25), transparent 34rem),
+          linear-gradient(135deg, #02191c, #063b40 60%, #02191c);
+      }
+      main { width: calc(100vw - 8px); margin: 0 4px; padding: 6px 0 14px; }
+      header, .nav, .viewer, .card, aside { border: 1px solid rgba(140,235,245,.18); background: rgba(3,50,56,.84); box-shadow: 0 16px 40px rgba(0,0,0,.28); }
+      header { display: none; }
+      h1 { margin: 0; font-size: 1rem; }
+      .eyebrow, .muted { color: #9ccbd0; font-size: .8rem; }
+      .stats { display: flex; gap: 10px; max-width: 740px; }
+      .stats div { min-width: 118px; border-radius: 12px; padding: 10px 12px; background: rgba(0,0,0,.14); }
+      .stats strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 360px; }
+      .nav { display: flex; align-items: center; gap: 10px; border-radius: 14px; padding: 12px; margin-bottom: 14px; }
+      button, select { border: 1px solid rgba(130,235,242,.35); border-radius: 8px; padding: .72rem 1rem; color: #e8fbff; background: #075b66; cursor: pointer; font-weight: 800; }
+      select { min-width: 132px; }
+      button:disabled { opacity: .4; cursor: not-allowed; }
+      .pos { min-width: 160px; text-align: center; }
+      .viewer { display: grid; grid-template-columns: minmax(0,1fr) 150px 220px; gap: 6px; align-items: start; border-radius: 0; padding: 0; background: transparent; border: 0; box-shadow: none; }
+      .card, aside { min-width: 0; border-radius: 0; padding: 10px; }
+      .round { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; font-size: .78rem; line-height: 1.1; }
+      .round div { display: flex; align-items: center; flex-wrap: nowrap; gap: 7px; white-space: nowrap; }
+      .round .small { width: 24px; height: 32px; }
+      .table { position: relative; height: min(52vw, calc(100vh - 190px)); min-height: 440px; border-radius: 0; padding: 0; background: #002327; overflow: hidden; }
+      .center { position: absolute; left: 50%; top: 50%; display: grid; place-items: center; width: 150px; height: 92px; transform: translate(-50%, -50%); border: 1px solid #0d8993; border-radius: 0; color: #fff; background: #00606c; text-align: center; font-size: .92rem; }
+      .player { position: absolute; overflow: visible; padding: 4px; }
+      .p0 { left: 50%; bottom: 16px; width: 390px; transform: translateX(-50%); }
+      .p1 { right: 14px; top: 52px; width: 120px; height: calc(100% - 104px); transform: none; }
+      .p2 { left: 50%; top: 18px; width: 390px; transform: translateX(-50%); }
+      .p3 { left: 14px; top: 52px; width: 120px; height: calc(100% - 104px); transform: none; }
+      .player-head { display: flex; width: max-content; align-items: center; gap: 7px; margin-bottom: 4px; border-radius: 999px; padding: 3px 7px 3px 3px; background: rgba(0,0,0,.24); font-size: .8rem; }
+      .badge { border-radius: 999px; padding: 2px 7px; color: #062f33; background: #8ee8ef; font-weight: 900; }
+      .reach { background: #ffbf69; }
+      .river { display: flex; align-items: flex-start; gap: var(--river-gap); }
+      .river-line { display: flex; gap: var(--river-gap); }
+      .p0 .river { flex-direction: column; }
+      .p2 .river { flex-direction: column-reverse; }
+      .p2 .river-line { flex-direction: row-reverse; }
+      .p1 .river { flex-direction: row; }
+      .p1 .river-line { flex-direction: column-reverse; }
+      .p3 .river { flex-direction: row-reverse; }
+      .p3 .river-line { flex-direction: column; }
+      .hand, .meld { display: flex; flex-wrap: wrap; gap: 1px; }
+      .hand-wrap { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0; }
+      .hand-main { display: flex; flex-wrap: wrap; gap: 1px; }
+      .hand-tsumo { display: flex; gap: 1px; }
+      .hand-tsumo-gap { width: 12px; flex-shrink: 0; align-self: stretch; }
+      .hand-row .hand, .hand-row .hand-wrap, .hand-row .hand-main, .hand-row .hand-tsumo { flex-wrap: nowrap; }
+      .hand-stack { display: grid; gap: 2px; }
+      .hand-prob-line { display: flex; align-items: flex-end; height: 40px; gap: 1px; }
+      .hand-prob-cell { position: relative; display: flex; width: 34px; height: 38px; align-items: flex-end; justify-content: center; }
+      .hand-prob-gap { width: 12px; flex-shrink: 0; }
+      .hand-prob-bar { width: 5px; border-radius: 999px 999px 0 0; background: #6cff8d; box-shadow: 0 0 6px rgba(108,255,141,.55); }
+      .hand-prob-label { position: absolute; top: 0; color: #cffff0; font-size: .58rem; font-weight: 800; }
+      .melds { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+      .meld { align-items: center; border-radius: 8px; padding: 4px; background: rgba(0,0,0,.18); font-size: .72rem; }
+      .hand-row { display: grid; grid-template-columns: 62px 1fr; gap: 12px; align-items: center; margin-top: 10px; }
+      .tile { width: 38px; height: 52px; object-fit: contain; border-radius: 4px; background: rgba(255,255,255,.08); }
+      .hand-row .tile { width: 34px; height: 46px; }
+      .small { width: 30px; height: 41px; }
+      .river .small { width: 31px; height: 42px; background: transparent; }
+      .river .tile-right, .river .tile-left { width: 42px; height: 39px; }
+      .fallback { display: inline-grid; place-items: center; border: 1px solid rgba(255,255,255,.45); color: #111; background: #f7f4ed; font-size: .78rem; font-weight: 900; }
+      .pred { outline: 3px solid #6cff8d; } .actual { outline: 3px solid #ffbf69; } .called { opacity: .55; }
+      aside { max-height: calc(100vh - 120px); overflow: auto; }
+      .tile-back { display: inline-block; width: 28px; height: 38px; border: 2px solid rgba(255,255,255,.72); border-radius: 5px; background: #8f2020; box-shadow: inset 0 0 0 1px rgba(0,0,0,.35); }
+      .concealed { display: flex; justify-content: center; gap: 2px; margin-bottom: 8px; }
+      .p1 .concealed, .p3 .concealed { position: absolute; top: 0; flex-direction: column; width: max-content; }
+      .p1 .concealed { right: 0; margin-left: auto; }
+      .p3 .concealed { left: 0; }
+      .p1 .tile-back, .p3 .tile-back { width: 34px; height: 24px; }
+      .p1 .player-head, .p3 .player-head { position: absolute; bottom: -30px; margin: 0; }
+      .p1 .player-head { right: 0; }
+      .p3 .player-head { left: 0; }
+      .p1 .river, .p3 .river { position: absolute; top: 84px; justify-content: flex-start; }
+      .p1 .river { right: 58px; }
+      .p3 .river { left: 58px; }
+      .p1 .river-line, .p3 .river-line { min-height: 257px; }
+      .p1 .river-line { flex-direction: column-reverse; }
+      .p2 .river-line { min-width: 191px; justify-content: flex-start; }
+      .player .melds { position: absolute; z-index: 3; margin: 0; }
+      .player .meld { padding: 0; background: transparent; }
+      .player .meld > span { display: none; }
+      .p2 .melds { left: -82px; top: 0; flex-direction: row-reverse; }
+      .p1 .melds, .p3 .melds { flex-direction: column; }
+      .p1 .melds { right: 0; top: -44px; }
+      .p3 .melds { left: 0; bottom: -44px; }
+      .p0 .melds { right: 0; bottom: 62px; }
+      .nav { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0; border-radius: 0; padding: 8px; }
+      .nav button, .nav select { min-height: 50px; border-radius: 0; background: #00606c; padding: .45rem .35rem; font-size: .8rem; }
+      .nav select { width: 100%; min-width: 0; font-size: .78rem; }
+      .pos { display: grid; min-width: 0; min-height: 50px; place-items: center; border: 1px solid rgba(130,235,242,.35); background: #00535d; }
+      .prediction-summary { display: grid; border-bottom: 12px solid #00353a; }
+      .prediction-side { display: grid; grid-template-columns: 1fr 38px 38px; align-items: center; gap: 8px; padding: 12px 10px; border-bottom: 1px solid rgba(140,235,245,.2); font-size: 1rem; }
+      .prediction-meta { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px; border-bottom: 8px solid #00353a; color: #bfeff3; font-size: .78rem; }
+      .action-list { display: grid; }
+      .action-head, .action-row { display: grid; grid-template-columns: 1fr 30px 34px; align-items: center; gap: 8px; }
+      .action-head { padding: 8px 6px; color: #cfe9eb; font-weight: 800; }
+      .action-row { min-height: 48px; padding: 6px; border-top: 1px solid rgba(140,235,245,.18); background: rgba(0,0,0,.08); }
+      .action-row code, .action-row strong { color: #d8f8fb; font-size: .72rem; text-align: right; }
+      #panel .small { width: 26px; height: 35px; }
+      .action-cell { display: flex; align-items: center; gap: 8px; color: #fff; }
+      .action-actual { box-shadow: inset 4px 0 0 #ffbf69; }
+      .action-predicted { outline: 1px solid rgba(108,255,141,.7); outline-offset: -1px; }
+      .decision-top { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: center; border-radius: 14px; padding: 14px; background: rgba(0,0,0,.14); margin-bottom: 12px; }
+      .status { border-radius: 999px; padding: 8px 12px; font-weight: 900; color: #3b2000; background: #ffbf69; }
+      .ok { color: #05350f; background: #6cff8d; }
+      .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-radius: 14px; padding: 12px; background: rgba(0,0,0,.14); margin-bottom: 12px; }
+      .row, .head { display: grid; grid-template-columns: 130px 1fr 72px; gap: 10px; align-items: center; }
+      .head { position: sticky; top: 0; padding: 10px 12px; color: #9ccbd0; background: #032f35; font-weight: 800; }
+      .row { border-top: 1px solid rgba(140,235,245,.14); padding: 9px 12px; background: rgba(0,0,0,.12); }
+      .row.top { background: rgba(108,255,141,.1); }
+      .row.hit { box-shadow: inset 3px 0 0 #ffbf69; }
+      .cand { display: flex; align-items: center; gap: 6px; }
+      .rank { width: 20px; color: #9ccbd0; text-align: right; }
+      .bar-cell { display: grid; grid-template-columns: 1fr 58px; gap: 8px; align-items: center; }
+      .bar { overflow: hidden; height: 8px; border-radius: 999px; background: rgba(255,255,255,.12); }
+      .bar span { display: block; height: 100%; border-radius: inherit; background: #8ee8ef; }
+      .attention { margin-top: 14px; border-radius: 14px; background: rgba(0,0,0,.14); overflow: hidden; }
+      .attention h2 { margin: 0; padding: 12px; font-size: 1rem; }
+      .att-row { display: grid; grid-template-columns: 52px 1fr 58px; gap: 8px; align-items: center; border-top: 1px solid rgba(140,235,245,.14); padding: 8px 12px; }
+      .att-event { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      code { color: #bfeff3; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div><div class="eyebrow">Mahjong Transformer V2</div><h1>AI判断可視化ビューア</h1></div>
+        <div class="stats">
+          <div><span class="muted">局面数</span><strong id="count">-</strong></div>
+          <div><span class="muted">一致数</span><strong id="acc">-</strong></div>
+          <div><span class="muted">checkpoint</span><strong id="ckpt">-</strong></div>
+        </div>
+      </header>
+      <section class="viewer">
+        <div class="card" id="board"></div>
+        <nav class="nav">
+          <button id="prev">&lt; Prev</button><button id="next">Next &gt;</button>
+          <button id="first-miss">&lt; Prev Error</button><button id="next-error">Next Error &gt;</button>
+          <button id="low-conf">&lt; Prev Choice</button><button id="next-choice">Next Choice &gt;</button>
+          <div class="pos"><strong id="pos">-</strong><div class="muted" id="roundpos">-</div></div><button disabled>Options</button>
+          <select id="player-filter"></select><select id="round-filter"></select>
+        </nav>
+        <aside id="panel"></aside>
+      </section>
+    </main>
+    <script>
+      const honor = { east: "1z", south: "2z", west: "3z", north: "4z", white: "5z", green: "6z", red: "7z" };
+      const dirs = { self: "self_bottom", right: "shimocha", top: "toimen", left: "kamicha" };
+      const orientations = ["self", "right", "top", "left"];
+      let report = null;
+      let index = 0;
+      let selectedPlayer = "all";
+      let selectedRound = "all";
+      const pct = (v) => `${(v * 100).toFixed(2)}%`;
+      const imgPath = (tile, ori = "self") => `/tiles/${dirs[ori]}/${honor[tile.code] || tile.code}.png`;
+      function tile(tile, ori = "self", cls = "") {
+        return `<img class="tile tile-${ori} ${cls}" src="${imgPath(tile, ori)}" alt="${tile.name}" title="${tile.name}" onerror="this.outerHTML='<span class=&quot;tile tile-${ori} fallback ${cls}&quot;>${tile.name}</span>'">`;
+      }
+      function renderRiver(river, ori) {
+        const lines = [];
+        for (let i = 0; i < river.length; i += 6) {
+          const line = river.slice(i, i + 6).map((t) => tile(t, ori, `small ${t.called ? "called" : ""}`)).join("");
+          lines.push(`<div class="river-line">${line}</div>`);
+        }
+        return lines.join("");
+      }
+      function setText(id, text) { document.getElementById(id).textContent = text; }
+      function isCorrect(d) {
+        return d.prediction && d.prediction.predicted && d.prediction.actual && d.prediction.predicted.tile.kind === d.prediction.actual.tile.kind;
+      }
+      function decisionForItem(d) {
+        if (!d) return null;
+        if (d.prediction) return d;
+        const sameContext = report.decisions.filter((x) =>
+          x.metadata.source_file === d.metadata.source_file &&
+          x.metadata.round_index === d.metadata.round_index &&
+          x.metadata.player_id === d.metadata.player_id
+        );
+        return sameContext.find((x) => x.metadata.event_index >= d.metadata.event_index) || sameContext[sameContext.length - 1] || null;
+      }
+      function sourceItems() {
+        return report.decisions;
+      }
+      function eventText(event) {
+        if (!event) return "";
+        const player = event.player >= 0 ? `P${event.player}` : "";
+        const tileText = event.tile ? event.tile.name : event.hidden ? "非公開" : "";
+        return [event.type, player, tileText].filter(Boolean).join(" ");
+      }
+      function render() {
+        ensureIndexVisible();
+        const items = sourceItems();
+        const d = items[index];
+        const replayMode = Boolean(report.frames?.length);
+        setText("count", items.length);
+        setText("acc", `${report.decisions.filter(isCorrect).length} / ${report.decisions.length}`);
+        setText("ckpt", report.source.checkpoint);
+        const visible = visibleIndexes();
+        setText("pos", `${visible.indexOf(index) + 1} / ${visible.length}`);
+        setText("roundpos", `${d.board.round.wind_label}${d.board.round.number}局 ${d.board.round.junme.toFixed(1)}巡目 ${eventText(d.current_event)}`);
+        document.getElementById("prev").disabled = visible.indexOf(index) <= 0;
+        document.getElementById("next").disabled = visible.indexOf(index) < 0 || visible.indexOf(index) >= visible.length - 1;
+        document.getElementById("first-miss").disabled = replayMode;
+        document.getElementById("next-error").disabled = replayMode;
+        document.getElementById("low-conf").disabled = replayMode;
+        document.getElementById("next-choice").disabled = replayMode;
+        const panelDecision = decisionForItem(d);
+        renderBoard(d.board, d.current_event, panelDecision);
+        renderPanel(panelDecision, d.current_event);
+      }
+      function visibleIndexes() {
+        return sourceItems().map((d, i) => ({ d, i })).filter(({ d }) => {
+          const playerOk = selectedPlayer === "all" || String(d.metadata.player_id) === selectedPlayer;
+          const roundOk = selectedRound === "all" || String(d.metadata.round_index) === selectedRound;
+          return playerOk && roundOk;
+        }).map(({ i }) => i);
+      }
+      function ensureIndexVisible() {
+        const visible = visibleIndexes();
+        if (!visible.includes(index)) index = visible[0] ?? 0;
+      }
+      function move(delta) {
+        const visible = visibleIndexes();
+        const pos = visible.indexOf(index);
+        if (pos < 0) return;
+        index = visible[Math.max(0, Math.min(visible.length - 1, pos + delta))];
+        render();
+      }
+      function setupFilters() {
+        const playerSelect = document.getElementById("player-filter");
+        const roundSelect = document.getElementById("round-filter");
+        const items = sourceItems();
+        const players = [...new Set(items.map((d) => d.metadata.player_id))].sort((a, b) => a - b);
+        const rounds = [...new Set(items.map((d) => d.metadata.round_index))].sort((a, b) => a - b);
+        playerSelect.innerHTML = players.map((p) => `<option value="${p}">P${p}視点</option>`).join("");
+        roundSelect.innerHTML = `<option value="all">全局</option>` + rounds.map((r) => `<option value="${r}">${r}局目</option>`).join("");
+        selectedPlayer = String(report.decisions[0]?.metadata.player_id ?? "all");
+        playerSelect.value = selectedPlayer;
+        playerSelect.onchange = (e) => { selectedPlayer = e.target.value; ensureIndexVisible(); render(); };
+        roundSelect.onchange = (e) => { selectedRound = e.target.value; ensureIndexVisible(); render(); };
+      }
+      function candidateProbability(decision, tileData) {
+        const candidate = decision?.prediction?.candidates?.find((c) => c.tile.kind === tileData.kind);
+        return candidate ? candidate.probability : null;
+      }
+      function probCell(decision, tileData) {
+        const p = candidateProbability(decision, tileData);
+        if (p === null) return `<div class="hand-prob-cell"></div>`;
+        return `<div class="hand-prob-cell"><span class="hand-prob-label">${(p * 100).toFixed(0)}</span><span class="hand-prob-bar" style="height:${Math.max(p * 34, 3)}px"></span></div>`;
+      }
+      function renderHandTiles(b, decision) {
+        const hand = b.hand;
+        const ld = b.last_draw_tile;
+        if (!ld || ld.id === undefined || hand.length !== 14) {
+          return `<div class="hand-stack"><div class="hand">${hand.map((t) => tile(t)).join("")}</div></div>`;
+        }
+        const i = hand.findIndex((t) => t.id === ld.id);
+        if (i < 0) {
+          return `<div class="hand-stack"><div class="hand">${hand.map((t) => tile(t)).join("")}</div></div>`;
+        }
+        const mainTiles = hand.filter((_, idx) => idx !== i);
+        const main = mainTiles.map((t) => tile(t)).join("");
+        const tsumo = tile(hand[i]);
+        const probs = decision ? `<div class="hand-prob-line">${mainTiles.map((t) => probCell(decision, t)).join("")}<div class="hand-prob-gap"></div>${probCell(decision, hand[i])}</div>` : "";
+        return `<div class="hand-stack">${probs}<div class="hand hand-wrap"><div class="hand-main">${main}</div><div class="hand-tsumo-gap" aria-hidden="true"></div><div class="hand-tsumo">${tsumo}</div></div></div>`;
+      }
+      function renderBoard(b, currentEvent, decision) {
+        const players = b.players.map((p) => {
+          const ori = orientations[p.relative] || "self";
+          const river = renderRiver(p.river, ori);
+          const melds = p.melds.map((m) => `<div class="meld"><span>${m.type}</span>${m.tiles.map((t) => tile(t, ori, "small")).join("")}</div>`).join("");
+          const concealedCount = p.relative === 0 ? 0 : Math.max(7, 13 - p.melds.length * 3);
+          const concealed = concealedCount ? `<div class="concealed">${Array.from({ length: concealedCount }, () => '<span class="tile-back"></span>').join("")}</div>` : "";
+          return `<section class="player p${p.relative}">${concealed}<div class="player-head"><span class="badge">${p.label}</span><strong>${p.name}</strong><span>${p.score.toLocaleString()}</span>${p.is_dealer ? '<span class="badge">親</span>' : ""}${p.reach_status === 2 ? '<span class="badge reach">立直</span>' : ""}</div><div class="river">${river}</div><div class="melds">${melds}</div></section>`;
+        }).join("");
+        const actor = b.players.find((p) => p.is_actor);
+        document.getElementById("board").innerHTML = `<div class="round"><div><strong>${b.round.wind_label}${b.round.number}局</strong><span>${b.round.honba}本場</span><span>供託 ${b.round.kyotaku}</span><span>巡目 ${b.round.junme.toFixed(1)}</span><span>残り山 ${b.round.wall_tile_count}</span></div><div><span class="muted">ドラ表示</span>${b.dora_indicators.map((t) => tile(t, "self", "small")).join("")}</div></div><div class="table">${players}<div class="center"><div>${b.round.wind_label}${b.round.number}</div><div>${b.round.honba}本場</div><div>視点 ${actor?.name || `P${b.actor}`}</div><div>${eventText(currentEvent)}</div></div></div><div class="hand-row"><strong class="muted">視点手牌</strong>${renderHandTiles(b, decision)}</div>`;
+      }
+      function renderPanel(d, currentEvent) {
+        if (!d || !d.prediction) {
+          document.getElementById("panel").innerHTML = `<div class="decision-top"><div><span class="eyebrow">Prediction</span><strong>${eventText(currentEvent)}</strong></div><div class="status ok">待機</div></div>`;
+          return;
+        }
+        const p = d.prediction.predicted;
+        const a = d.prediction.actual;
+        const ok = isCorrect(d);
+        const rows = d.prediction.candidates.map((c) => `<div class="action-row ${c.is_actual ? "action-actual" : ""} ${p && p.tile.kind === c.tile.kind ? "action-predicted" : ""}"><div class="action-cell"><span>Cut</span>${tile(c.tile, "self", `small ${c.is_actual ? "actual" : ""}`)}</div><code>${c.logit.toFixed(2)}</code><strong>${(c.probability * 100).toFixed(2)}</strong></div>`).join("");
+        document.getElementById("panel").innerHTML = `<div class="prediction-summary"><div class="prediction-side"><span>Player</span><strong>Cut</strong>${a ? tile(a.tile, "self", "small actual") : "-"}</div><div class="prediction-side"><span>AI</span><strong>Cut</strong>${p ? tile(p.tile, "self", "small pred") : "-"}</div></div><div class="prediction-meta"><span class="status ${ok ? "ok" : ""}">${ok ? "一致" : "不一致"}</span><span>${d.metadata.is_tsumogiri ? "ツモ切り" : "手出し"}</span><span>R${d.metadata.round_index} / E${d.metadata.event_index}</span></div><div class="action-list"><div class="action-head"><span>Action</span><span>Q</span><span>P</span></div>${rows}</div>`;
+      }
+      document.getElementById("prev").onclick = () => move(-1);
+      document.getElementById("next").onclick = () => move(1);
+      document.getElementById("first-miss").onclick = () => { if (report.frames?.length) return; const visible = visibleIndexes(); const i = visible.find((idx) => !isCorrect(report.decisions[idx])); if (i !== undefined) { index = i; render(); } };
+      document.getElementById("next-error").onclick = () => { if (report.frames?.length) return; const visible = visibleIndexes(); const i = visible.find((idx) => idx > index && !isCorrect(report.decisions[idx])); if (i !== undefined) { index = i; render(); } };
+      document.getElementById("low-conf").onclick = () => { if (report.frames?.length) return; const visible = visibleIndexes(); const i = visible.find((idx) => (report.decisions[idx].prediction.predicted?.probability || 1) < 0.4); if (i !== undefined) { index = i; render(); } };
+      document.getElementById("next-choice").onclick = () => { if (report.frames?.length) return; const visible = visibleIndexes(); const i = visible.find((idx) => idx > index && (report.decisions[idx].prediction.predicted?.probability || 1) < 0.4); if (i !== undefined) { index = i; render(); } };
+      window.addEventListener("keydown", (event) => {
+        const tagName = event.target?.tagName;
+        if (event.isComposing || tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT") return;
+        if (!report) return;
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          move(-1);
+        } else if (event.key === "ArrowRight") {
+          event.preventDefault();
+          move(1);
+        }
+      });
+      fetch("/reports/sample.json").then((r) => r.json()).then((data) => { report = data; setupFilters(); render(); });
+    </script>
+  </body>
+</html>

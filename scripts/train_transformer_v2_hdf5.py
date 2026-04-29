@@ -34,6 +34,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--n-heads", type=int, default=4)
     parser.add_argument("--d-ff", type=int, default=256)
     parser.add_argument("--valid-shards", type=int, default=4)
+    parser.add_argument("--valid-batch-size", type=int, default=2048)
     parser.add_argument("--log", default=None)
     parser.add_argument("--metrics-csv", default=None)
     parser.add_argument("--resume", action="store_true")
@@ -118,6 +119,21 @@ def save_checkpoint(path: Path, model, optimizer, config, epoch: int, history: L
     torch.save({"model_state": model.state_dict(), "optimizer_state": optimizer.state_dict(), "config": config.__dict__, "epoch": epoch, "history": history}, path)
 
 
+def save_latest_checkpoint(path: Path, model, optimizer, config, epoch: int, phase: str, history: List[Dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(
+        {
+            "model_state": model.state_dict(),
+            "optimizer_state": optimizer.state_dict(),
+            "config": config.__dict__,
+            "epoch": epoch,
+            "phase": phase,
+            "history": history,
+        },
+        path,
+    )
+
+
 def append_csv(path: Path, row: Dict) -> None:
     fields = [
         "epoch", "train_samples", "train_loss", "train_top1", "train_top3", "train_top5", "train_top10", "train_legal_rate",
@@ -167,6 +183,9 @@ def main() -> None:
         for i, shard in enumerate(train_shards, start=1):
             tensors = load_shard(shard, args.device)
             add_totals(train_totals, run_shard(model, criterion, tensors, args.batch_size, train=True, optimizer=optimizer))
+            del tensors
+            if torch.cuda.is_available() and args.device.startswith("cuda"):
+                torch.cuda.empty_cache()
             if i % 10 == 0:
                 partial = normalize("train", train_totals)
                 print(
@@ -176,9 +195,14 @@ def main() -> None:
                     flush=True,
                 )
 
+        save_latest_checkpoint(output.with_suffix(".latest.pt"), model, optimizer, config, epoch, "after_train_before_validation", history)
+
         for shard in valid_shards:
             tensors = load_shard(shard, args.device)
-            add_totals(val_totals, run_shard(model, criterion, tensors, args.batch_size, train=False))
+            add_totals(val_totals, run_shard(model, criterion, tensors, args.valid_batch_size, train=False))
+            del tensors
+            if torch.cuda.is_available() and args.device.startswith("cuda"):
+                torch.cuda.empty_cache()
 
         row = {"type": "epoch", "epoch": epoch, "elapsed_sec": round(time.time() - start, 2)}
         row.update(normalize("train", train_totals))

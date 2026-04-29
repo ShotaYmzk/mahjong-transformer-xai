@@ -139,6 +139,13 @@ class ObservedState:
                 mask[kind] = 1.0
         return mask
 
+    def observable_events(self) -> Tuple[EventRecord, ...]:
+        return tuple(
+            event
+            for event in self.events
+            if not (event.private_tile and event.player != self.player_id)
+        )
+
     def static_features(self) -> np.ndarray:
         features = np.zeros(STATIC_FEATURE_DIM, dtype=np.float32)
         idx = 0
@@ -225,14 +232,11 @@ class ObservedState:
 
     def sequence_features(self) -> np.ndarray:
         rows: List[np.ndarray] = []
-        for event in self.events[-MAX_EVENT_HISTORY:]:
+        for event in self.observable_events()[-MAX_EVENT_HISTORY:]:
             vec = np.zeros(EVENT_FEATURE_DIM, dtype=np.float32)
             vec[0] = float(EVENT_TYPES.get(event.event_type, EVENT_TYPES["PADDING"]))
             vec[1] = float(event.player + 1)
-            tile_id = event.tile_id
-            if event.private_tile and event.player != self.player_id:
-                tile_id = -1
-            kind = tile_id_to_kind(tile_id)
+            kind = tile_id_to_kind(event.tile_id)
             vec[2] = float(kind + 1) if kind >= 0 else 0.0
             vec[3] = float(event.junme)
             vec[4] = float(event.data0)
@@ -366,6 +370,7 @@ class PrivateRoundState:
 
     def process_discard(self, player: int, tile_id: int, tsumogiri: bool) -> None:
         self._remove_tile_by_id_or_kind(player, tile_id)
+        self.last_draw_tile[player] = -1
         discard = PublicDiscard(player=player, tile_id=tile_id, tsumogiri=tsumogiri)
         self.rivers[player].append(discard)
         self.last_discard_player = player
@@ -400,7 +405,10 @@ class PrivateRoundState:
 
         called_tile = self.last_discard_tile if info.naki_type in {NakiType.CHI, NakiType.PON, NakiType.DAIMINKAN} else -1
         from_who = self.last_discard_player if called_tile >= 0 else player
-        consumed = self._resolve_consumed_tiles(player, info.consumed)
+        consumed_candidates = list(info.consumed)
+        if called_tile >= 0 and not consumed_candidates:
+            consumed_candidates = self._consumed_candidates_from_call(info.naki_type, called_tile, info.tiles)
+        consumed = self._resolve_consumed_tiles(player, consumed_candidates)
         for tile_id in consumed:
             self._remove_tile_by_id_or_kind(player, tile_id)
 
@@ -436,6 +444,18 @@ class PrivateRoundState:
         else:
             self.pending_player = -1
             self.pending_source = ""
+
+    def _consumed_candidates_from_call(self, naki_type: NakiType, called_tile: int, tiles: Iterable[int]) -> List[int]:
+        called_kind = tile_id_to_kind(called_tile)
+        if called_kind < 0:
+            return []
+        needed = 2 if naki_type == NakiType.PON else 3 if naki_type == NakiType.DAIMINKAN else 0
+        if needed <= 0:
+            return []
+        same_kind_tiles = [tile_id for tile_id in tiles if tile_id_to_kind(tile_id) == called_kind]
+        if len(same_kind_tiles) > needed:
+            same_kind_tiles = [tile_id for tile_id in same_kind_tiles if tile_id != called_tile]
+        return same_kind_tiles[:needed]
 
     def process_terminal(self, tag: str, attrib: Dict[str, str]) -> None:
         event_type = "AGARI" if tag == "AGARI" else "RYUUKYOKU"
@@ -640,6 +660,12 @@ def validate_no_private_leakage(data: Dict[str, np.ndarray]) -> List[str]:
         static_hand = static_features[:, 13 : 13 + NUM_TILE_TYPES]
         if not np.array_equal(static_hand, hand_counts):
             errors.append("static hand block does not match actor hand_counts")
+
+    sequence_features = data.get("sequence_features")
+    if sequence_features is not None and len(sequence_features):
+        hidden_draws = (sequence_features[:, :, 0] == EVENT_TYPES["DRAW"]) & (sequence_features[:, :, 2] == 0)
+        if np.any(hidden_draws):
+            errors.append("sequence_features contains private draw events")
     return errors
 
 
