@@ -88,7 +88,7 @@ checkpoint（.pt）+ metrics CSV/JSONL
 | `hand_counts` | float32 | `(N, 34)` | 自摸手の種別枚数 |
 | `aka_flags` | float32 | `(N, 3)` | 赤 5m/5p/5s 保有フラグ |
 | `valid_masks` | float32 | `(N, 34)` | その時点で切りうる種別（リーチ中はツモ切りのみ 1） |
-| `labels` | int64 | `(N,)`` | 正解種別 |
+| `labels` | int64 | `(N,)` | 正解種別 |
 | `metadata` | object | `(N,)` | ファイル名・局・イベント index など（学習テンソルには使わない） |
 
 HDF5 では `metadata` を JSON 文字列の可変長配列として保存（`build_discard_hdf5_shards.py`）。

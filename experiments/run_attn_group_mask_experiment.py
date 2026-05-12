@@ -21,14 +21,14 @@ Metrics (from ``experiments/metrics/faithfulness.py``)
 - Decision flip rate  (does the top-1 prediction change?).
 - Probability drop    (how much does the top-1 probability fall?).
 
-Outputs (saved to ``outputs/``)
---------------------------------
-- ``outputs/figures/attn_mask_kl_comparison.png``:  bar chart, mean KL by
+Outputs
+---------
+- Figures under project ``figure/``:
+- ``figure/attn_mask_kl_comparison.png``:  bar chart, mean KL by
   masking condition and feature group.
-- ``outputs/figures/attn_group_heatmap.png``:        seaborn heatmap,
+- ``figure/attn_group_heatmap.png``:        seaborn heatmap,
   per-sample baseline group importance scores.
-- ``outputs/figures/attn_mask_fliprate.png``:         grouped bar chart,
-  flip rate and probability drop by condition.
+- ``figure/attn_mask_group_breakdown.png``:   top-k mask group frequency.
 - ``outputs/results/attn_group_mask_results.csv``:   full per-sample results.
 - ``outputs/results/attn_group_mask_summary.json``:  aggregated statistics.
 """
@@ -79,11 +79,11 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 XML_DIR = Path("/home/ubuntu/Documents/tenhou_xml_2023")
 CHECKPOINT = _ROOT / "outputs/impl1/hdf5_10epoch.pt"
-FIGURES_DIR = _ROOT / "outputs/figures"
+FIGURES_DIR = _ROOT / "figure"
 RESULTS_DIR = _ROOT / "outputs/results"
 
 N_XML_FILES = 5      # number of XML files to parse
-MAX_SAMPLES = 50     # maximum game states to evaluate
+MAX_SAMPLES = 150    # maximum game states to evaluate
 K_MASK = 3           # number of feature groups to mask
 RANDOM_SEED = 42
 

@@ -17,8 +17,8 @@ Key analyses
 4. **Flip-rate & probability-drop curves** — corroborating evidence.
 5. **Signal-to-noise ratio** — gap / (std of random-k KL).
 
-All results are saved to ``outputs/`` and documented in
-``docs/experiment-attn-group-mask-2026-05-12.md``.
+All results are saved to ``outputs/results/`` (CSVs / JSON); figures under ``figure/``.
+Documented together in ``docs/experiment-attn-group-mask-2026-05-12.md``.
 """
 
 from __future__ import annotations
@@ -69,11 +69,11 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 XML_DIR = Path("/home/ubuntu/Documents/tenhou_xml_2023")
 CHECKPOINT = _ROOT / "outputs/impl1/hdf5_10epoch.pt"
-FIGURES_DIR = _ROOT / "outputs/figures"
+FIGURES_DIR = _ROOT / "figure"
 RESULTS_DIR = _ROOT / "outputs/results"
 
 N_XML_FILES = 5
-MAX_SAMPLES = 50
+MAX_SAMPLES = 150
 K_VALUES = [1, 2, 3, 4, 5]
 RANDOM_SEED = 42
 N_RANDOM_REPEATS = 5   # repeat random condition to reduce variance

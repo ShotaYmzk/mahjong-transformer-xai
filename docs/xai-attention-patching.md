@@ -227,8 +227,8 @@ print(f"t={ttest.statistic:.4f}  p={ttest.pvalue:.4f}")
 from visualize_attention import AttentionVisualizer
 
 vis = AttentionVisualizer(model)
-vis.plot_mask_comparison(game_state, k=3, save_path="outputs/figures/mask_comparison.png")
-vis.plot_group_heatmap(game_states[:20], save_path="outputs/figures/group_heatmap.png")
+vis.plot_mask_comparison(game_state, k=3, save_path="figure/mask_comparison.png")
+vis.plot_group_heatmap(game_states[:20], save_path="figure/group_heatmap.png")
 ```
 
 ---

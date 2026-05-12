@@ -10,7 +10,7 @@ READMEはプロジェクトの入口だけにして、詳しい内容はこの `
 
 - [プロジェクト構成](project-structure.md): どのフォルダに何があるか。
 - **[年次規模牌譜パイプライン（XML→HDF5→学習）](year-scale-training-pipeline.md): 大規模コーパス処理の実装詳細と数値の出所。**
-- [強いモデルを作るための開発ガイド](model-development-guide.md): 新しいAIを作る時に使うファイル、置き場所、作業順。
+- [強いモデルを作るための開発ガイド](model-development-guide.md): 新しいAIを作る時に使うファイル、置き場所、作業順（**`MahjongTransformerV2` 本体・全学習入口のパス**は「まず使うファイル」を参照）。
 - [作業記録の運用](work-log-policy.md): 日々の成果や対処法をどこへ記録するか。
 
 ## 作業・実験

@@ -33,11 +33,14 @@ data/observation_schema.py
 scripts/build_discard_hdf5_shards.py
 ```
 
-学習:
+学習（実装の所在）:
 
 ```text
-models/mahjong_transformer_v2.py
-scripts/train_transformer_v2_hdf5.py
+models/mahjong_transformer_v2.py   # MahjongTransformerV2 / MahjongTransformerConfig（モデル本体・介入用 hook）
+models/__init__.py                 # from models import MahjongTransformerV2
+scripts/train_transformer_v2_hdf5.py       # 本番向け：HDF5 シャードから学習（主入口）
+scripts/train_transformer_v2_stream_xml.py # 代替：XML を直接読みストリーム学習（中間 HDF5 不要）
+scripts/train_transformer_v2.py            # 小規模デバッグ：単一 NPZ（TensorDataset）から学習
 ```
 
 評価:
