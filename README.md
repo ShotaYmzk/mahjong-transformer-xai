@@ -32,6 +32,7 @@
 - [Docs Index](docs/index.md): ドキュメント全体の入口。
 - [プロジェクト構成](docs/project-structure.md): どこに何のファイルがあるか。
 - [強いモデルを作るための開発ガイド](docs/model-development-guide.md): 今後モデルを強くする時に使うファイル、置き場所、作業順。
+- **[年次規模牌譜パイプライン](docs/year-scale-training-pipeline.md): XML→HDF5→学習の実装・実測規模・検証分割の注意点（コード準拠）。**
 - [作業記録の運用](docs/work-log-policy.md): 成果、対処法、トラブルをどこへ記録するか。
 - [トラブルシューティング](docs/troubleshooting.md): 発生した問題と直し方。
 - [AI判断可視化ビューア](docs/viewer-guide.md): `web/` の使い方。

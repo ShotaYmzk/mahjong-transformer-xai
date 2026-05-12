@@ -2,6 +2,12 @@ numpy
 torch
 h5py
 matplotlib
+pandas
+scipy
+seaborn
+
+# XAI / attention patching:
+bert-score
 
 # Optional:
 # pytest
