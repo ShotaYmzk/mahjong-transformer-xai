@@ -23,6 +23,7 @@ READMEはプロジェクトの入口だけにして、詳しい内容はこの `
 
 - [Attention Patching 実装仕様](xai-attention-patching.md): `attention_patching.py` / `visualize_attention.py` の設計、使い方、注意事項。
 - [Attention グループマスク実験・k スイープ分析 (2026/05/12)](experiment-attn-group-mask-2026-05-12.md): 実際のXMLで実施した k=1〜5 スイープ結果、k=3 採用の統計的根拠、生成ファイル一覧。
+- [Attention グループマスク：説明メモ（Flip率・図の読み方・グループとマスク実装）](guide-attention-mask-narrative.md): 論文／口頭説明用の短文整理。**特徴量・LRスケジューラ無し・Flip分子分母・kスイープ図・グループ重要度表の解釈**。
 
 ## 問題対応
 

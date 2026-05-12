@@ -172,6 +172,8 @@ HDF5 属性: `num_samples`, `schema = "leak_safe_discard_v1"`。
 
 Optimizer: **AdamW**（weight_decay=1e-4）、勾配クリップ 1.0。
 
+**学習率**: `--lr` を **epoch 間で変えず固定**。**PyTorch の `lr_scheduler` は使っていない**（コサインアニーリング等はコードに無い）。長時間ジョブ向けには `scripts/watch_hdf5_training.sh` が **`--resume`** 付きで同じスクリプトを再起動するだけであり、LR ポリシーを変えるものではない。
+
 ### 6.4 学習結果の例（`outputs/impl1/hdf5_10epoch_metrics.csv`）
 
 10 epoch 終了時点（同一 run）:
