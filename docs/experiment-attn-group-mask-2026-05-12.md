@@ -38,6 +38,8 @@ LLM 統合なし。モデル出力分布の変化量（KL divergence, Flip Rate,
 
 **口頭説明・Flip率の分子分母・kスイープ図の読み方・グループマスクが attention のどこに効くか**は、[guide-attention-mask-narrative.md](guide-attention-mask-narrative.md) に集約している（本ページは実験手順・数値一次ソースの中心）。
 
+**対照実験（意味グループを使わず、系列上の重要度上位 k 位置だけをマスク）**は [experiment-attn-topk-position-mask-2026-05-12.md](experiment-attn-topk-position-mask-2026-05-12.md) を参照。
+
 ---
 
 ## 実験設定
